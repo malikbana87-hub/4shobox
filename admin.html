@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Admin - Kalkulator 4shobox</title>
+<style>
+  :root{--ink:#2b1d20;--muted:#8a7378;--red:#f43f5e;--red-d:#be123c;--line:#fecdd3;--soft:#fff5f6}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;justify-content:center;padding:20px 14px;background:linear-gradient(160deg,#fff1f2,#ffe4e6 60%,#fecdd3);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink)}
+  .card{width:100%;max-width:440px;background:#fff;border-radius:22px;padding:24px 20px;box-shadow:0 10px 30px rgba(244,63,94,.15);align-self:flex-start}
+  h1{margin:0 0 4px;font-size:1.5rem;text-align:center}
+  .sub{margin:0 0 18px;text-align:center;color:var(--muted);font-size:.9rem}
+  label{display:block;font-weight:600;font-size:.88rem;margin:14px 0 6px}
+  input{width:100%;padding:13px 14px;font-size:1rem;border:1.5px solid var(--line);border-radius:12px;background:var(--soft);font-family:inherit;color:var(--ink)}
+  input:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 3px rgba(244,63,94,.18)}
+  button{width:100%;margin-top:14px;padding:14px;font-size:1rem;font-weight:700;color:#fff;background:var(--red);border:0;border-radius:14px;cursor:pointer}
+  button:active{background:var(--red-d)}
+  button.alt{background:#fff;color:var(--red-d);border:1.5px solid var(--line)}
+  .link{margin-top:14px;padding:12px;border-radius:12px;background:var(--soft);border:1.5px dashed var(--line);font-size:.8rem;word-break:break-all;color:var(--muted)}
+  .hint{margin-top:16px;font-size:.82rem;color:var(--muted);line-height:1.45}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Admin 4shobox</h1>
+  <p class="sub">Atur kurs RMB, lalu bagikan link ke buyer</p>
+
+  <label for="kurs">Kurs RMB hari ini (Rp per ¥)</label>
+  <input id="kurs" type="number" inputmode="decimal" placeholder="contoh: 2895">
+
+  <div class="link" id="link">Isi kurs dulu untuk membuat link buyer.</div>
+
+  <button id="salin">📋 Salin link buyer</button>
+  <button class="alt" id="buka">Buka tampilan buyer</button>
+
+  <p class="hint">Kurs tersimpan di link. Kalau kurs berubah, ubah angkanya di sini lalu bagikan link baru. Jangan bagikan alamat halaman admin ini ke buyer.</p>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const saved = localStorage.getItem('kurs4shobox');
+  if (saved) $('kurs').value = saved;
+
+  function buatLink() {
+    const k = parseFloat($('kurs').value);
+    if (!k || k <= 0) return '';
+    localStorage.setItem('kurs4shobox', k);
+    const base = location.href.replace(/admin(\.html)?(\?.*)?(#.*)?$/, '');
+    return base + 'index.html?kurs=' + k;
+  }
+  function tampil() { $('link').textContent = buatLink() || 'Isi kurs dulu untuk membuat link buyer.'; }
+
+  $('kurs').addEventListener('input', tampil);
+  $('salin').addEventListener('click', async () => {
+    const l = buatLink(); if (!l) return;
+    try { await navigator.clipboard.writeText(l); }
+    catch (e) { const t = document.createElement('textarea'); t.value = l; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); }
+    $('salin').textContent = '✅ Link tersalin!';
+    setTimeout(() => $('salin').textContent = '📋 Salin link buyer', 1500);
+  });
+  $('buka').addEventListener('click', () => { const l = buatLink(); if (l) window.open(l, '_blank'); });
+  tampil();
+</script>
+</body>
+</html>

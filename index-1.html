@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kalkulator 4shobox</title>
+<style>
+  :root{--bg:#fff1f2;--card:#fff;--ink:#2b1d20;--muted:#8a7378;--red:#f43f5e;--red-d:#be123c;--line:#fecdd3;--soft:#fff5f6}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;justify-content:center;padding:20px 14px;background:linear-gradient(160deg,#fff1f2,#ffe4e6 60%,#fecdd3);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink)}
+  .card{width:100%;max-width:440px;background:var(--card);border-radius:22px;padding:24px 20px;box-shadow:0 10px 30px rgba(244,63,94,.15);align-self:flex-start}
+  h1{margin:0 0 4px;font-size:1.6rem;text-align:center}
+  .sub{margin:0 0 20px;text-align:center;color:var(--muted);font-size:.9rem}
+  label{display:block;font-weight:600;font-size:.88rem;margin:14px 0 6px}
+  input,select{width:100%;padding:13px 14px;font-size:1rem;border:1.5px solid var(--line);border-radius:12px;background:var(--soft);color:var(--ink);font-family:inherit}
+  input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 3px rgba(244,63,94,.18)}
+  input[readonly]{background:#f3eaec;color:var(--muted)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .kurs-box{margin-top:14px;padding:12px 14px;border-radius:12px;background:var(--soft);border:1.5px dashed var(--line);font-size:.9rem;display:flex;justify-content:space-between}
+  .kurs-box b{color:var(--red-d)}
+  .result{margin-top:20px;padding:16px;border-radius:16px;background:var(--soft);border:1.5px solid var(--line)}
+  .line{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:.95rem}
+  .total{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-top:10px;padding-top:12px;border-top:2px dashed var(--line);color:var(--red-d);font-weight:800}
+  .total span:last-child{font-size:1.45rem}
+  .warn{margin-top:14px;padding:12px;border-radius:12px;background:#ffe4e6;color:var(--red-d);font-size:.85rem;text-align:center;line-height:1.4}
+  button{width:100%;margin-top:14px;padding:14px;font-size:1rem;font-weight:700;color:#fff;background:var(--red);border:0;border-radius:14px;cursor:pointer}
+  button:active{background:var(--red-d)}
+  .err{display:none;margin-top:14px;padding:12px;border-radius:12px;background:#fff7ed;color:#9a3412;font-size:.88rem;text-align:center}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Kalkulator 4shobox</h1>
+  <p class="sub">Hitung estimasi harga barang dari China (RMB ke IDR)</p>
+
+  <div class="err" id="err">Kurs belum diatur. Minta link terbaru dari admin.</div>
+
+  <div id="main">
+    <div class="kurs-box"><span>Kurs RMB hari ini</span><b id="kursShow">-</b></div>
+
+    <div class="row">
+      <div>
+        <label for="qty">Jumlah item</label>
+        <input id="qty" type="number" inputmode="numeric" min="1" value="1">
+      </div>
+      <div>
+        <label for="harga">Harga per item (¥)</label>
+        <input id="harga" type="number" inputmode="decimal" min="0" placeholder="0">
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="kat">Kategori barang</label>
+        <select id="kat">
+          <option value="10000">Album</option>
+          <option value="7000">PC</option>
+          <option value="3000">Persod</option>
+        </select>
+      </div>
+      <div>
+        <label for="fee">Fee GO per batch</label>
+        <input id="fee" readonly>
+      </div>
+    </div>
+
+    <div class="result">
+      <div class="line"><span id="lblBarang">Harga barang</span><span id="outBarang">Rp 0</span></div>
+      <div class="line"><span id="lblFee">Fee GO per batch</span><span id="outFee">Rp 0</span></div>
+      <div class="total"><span>Total bayar:</span><span id="outTotal">Rp 0</span></div>
+    </div>
+
+    <div class="warn">*harga belum termasuk fee wh dan ongkir lokal china (dibagi rata ke setiap buyer)</div>
+    <button id="salin">📋 Salin rincian untuk customer</button>
+  </div>
+</div>
+
+<script>
+  // Kurs dibaca dari link yang dibuat admin: index.html?kurs=2895
+  const kurs = parseFloat(new URLSearchParams(location.search).get('kurs'));
+  const rp = n => 'Rp ' + Math.round(n).toLocaleString('id-ID');
+  const $ = id => document.getElementById(id);
+  let teks = '';
+
+  if (!kurs || kurs <= 0) {
+    $('err').style.display = 'block';
+    $('main').style.display = 'none';
+  } else {
+    $('kursShow').textContent = '1 ¥ = ' + rp(kurs);
+  }
+
+  function hitung() {
+    const qty = Math.max(parseInt($('qty').value) || 0, 0);
+    const harga = Math.max(parseFloat($('harga').value) || 0, 0);
+    const fee = parseInt($('kat').value);
+    const kategori = $('kat').selectedOptions[0].text;
+    const barang = harga * qty * kurs;
+    const total = barang + fee;
+
+    $('fee').value = rp(fee);
+    $('lblBarang').textContent = `Harga barang (${harga} ¥ × ${qty})`;
+    $('lblFee').textContent = `Fee GO per batch (${kategori})`;
+    $('outBarang').textContent = rp(barang);
+    $('outFee').textContent = rp(fee);
+    $('outTotal').textContent = rp(total);
+
+    teks = `Rincian 4shobox\n` +
+      `Kurs: 1 ¥ = ${rp(kurs)}\n` +
+      `Harga barang (${harga} ¥ × ${qty}): ${rp(barang)}\n` +
+      `Fee GO per batch (${kategori}): ${rp(fee)}\n` +
+      `Total bayar: ${rp(total)}\n\n` +
+      `*harga belum termasuk fee wh dan ongkir lokal china (dibagi rata ke setiap buyer)`;
+  }
+
+  ['qty','harga','kat'].forEach(id => $(id).addEventListener('input', hitung));
+
+  $('salin').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(teks); }
+    catch (e) {
+      const t = document.createElement('textarea');
+      t.value = teks; document.body.appendChild(t); t.select();
+      document.execCommand('copy'); t.remove();
+    }
+    $('salin').textContent = '✅ Tersalin!';
+    setTimeout(() => $('salin').textContent = '📋 Salin rincian untuk customer', 1500);
+  });
+
+  if (kurs > 0) hitung();
+</script>
+</body>
+</html>
